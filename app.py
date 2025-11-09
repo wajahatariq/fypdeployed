@@ -113,4 +113,144 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
         max_width = 240
         max_height = 180
         c.drawString(50, height - 170, "Vehicle Image:")
-        c.drawImage(ImageReader(vehicle_image_path), 50, height - 350, width=max_wi_
+        c.drawImage(ImageReader(vehicle_image_path), 50, height - 350, width=max_width, height=max_height, preserveAspectRatio=True)
+
+    # Violations Table
+    c.setFillColor(primary_color)
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(320, height - 170, "Violations and Fines")
+
+    # Prepare table data
+    table_data = [["Violation", "Description", "Fine (₹)"]]
+    for v in violations:
+        details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "desc":"", "icon":"❓"})
+        table_data.append([v, details["desc"], f"₹{details['fine']}"])
+
+    table = Table(table_data, colWidths=[100, 230, 80])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), primary_color),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,0), 14),
+        ("ALIGN", (0,0), (-1,0), "CENTER"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("INNERGRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("BOX", (0,0), (-1,-1), 0.75, colors.black),
+        ("FONTNAME", (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE", (0,1), (-1,-1), 12),
+    ]))
+    table.wrapOn(c, width, height)
+    table.drawOn(c, 310, height - 330 - 20 * len(violations))
+
+    # Total fine
+    c.setFont("Helvetica-Bold", 18)
+    c.setFillColor(secondary_color)
+    c.drawString(320, height - 360 - 20 * len(violations), f"Total Fine Amount: ₹{fine_amount}")
+
+    # QR Code
+    qr_img = generate_qr_code(challan_id)
+    qr_buffer = BytesIO()
+    qr_img.save(qr_buffer)
+    qr_buffer.seek(0)
+    c.drawImage(ImageReader(qr_buffer), width - 160, height - 320, width=120, height=120)
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+def generate_challan_id(length=8) -> str:
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+VIOLATION_DETAILS = {
+    "without helmet": {
+        "fine": 500,
+        "icon": "🪖",
+        "severity": "serious",
+        "desc": "Riding without a helmet puts your safety at risk and is punishable by fine."
+    },
+    "no seatbelt": {
+        "fine": 300,
+        "icon": "🔒",
+        "severity": "warning",
+        "desc": "Seatbelt ensures safety in accidents; non-usage attracts fines."
+    },
+    "triple riding": {
+        "fine": 700,
+        "icon": "👥",
+        "severity": "serious",
+        "desc": "Carrying more than two passengers is illegal and dangerous."
+    },
+    "number plate": {
+        "fine": 0,
+        "icon": "🔢",
+        "severity": "info",
+        "desc": "Number plate detection only."
+    }
+}
+
+def main():
+    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
+
+    css_path = Path(__file__).parent / "style.css"
+    if css_path.exists():
+        css_content = css_path.read_text()
+        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
+
+    st.title("Traffic Violation Detection & E-Challan Generator")
+
+    uploaded_file = st.file_uploader("Upload Vehicle Image (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
+    if uploaded_file:
+        temp_path = os.path.join(TEMP_DIR, uploaded_file.name)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.image(temp_path, caption="Uploaded Vehicle Image", use_column_width=True)
+
+        with col2:
+            with st.spinner("Extracting number plate and OCR bounding boxes..."):
+                plate, ocr_img = extract_number_plate(temp_path, conf_threshold=0.3)
+            if ocr_img is not None:
+                st.image(ocr_img, caption="OCR Bounding Boxes on Preprocessed Image", use_column_width=True)
+            st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
+
+        with st.spinner("Analyzing for violations..."):
+            violations = analyze_violations(temp_path)
+
+        if violations:
+            st.markdown("**Detected Violations:**")
+            for v in violations:
+                details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "icon":"❓", "severity":"info", "desc":""})
+                badge_class = details["severity"]
+                icon = details["icon"]
+                desc = details["desc"]
+                fine = details["fine"]
+
+                st.markdown(
+                    f"""
+                    <div class="violation-badge {badge_class}" title="{desc}">
+                        <span class="violation-icon">{icon}</span> {v} - ₹{fine}
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("No violations detected.")
+
+        total_fine = sum(VIOLATION_DETAILS.get(v.lower(), {}).get("fine", 0) for v in violations)
+        st.markdown(f"### Total Fine Amount: ₹{total_fine}")
+
+        if violations:
+            challan_id = generate_challan_id()
+            pdf_buffer = generate_challan_pdf(plate or "UNKNOWN", violations, total_fine, challan_id, temp_path)
+
+            st.download_button(
+                label="Download Challan PDF",
+                data=pdf_buffer,
+                file_name=f"challan_{challan_id}.pdf",
+                mime="application/pdf"
+            )
+
+if __name__ == "__main__":
+    main()
