@@ -13,6 +13,7 @@ import string
 from ultralytics import YOLO
 import qrcode
 from PIL import Image
+from pathlib import Path
 
 OUTPUT_DIR = "output"
 TEMP_DIR = "temp"
@@ -34,28 +35,29 @@ def preprocess_image(image_path: str) -> np.ndarray:
     if image is None:
         raise FileNotFoundError(f"Image not found: {image_path}")
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.equalizeHist(gray)
+    denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
     kernel = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
-    sharpened = cv2.filter2D(gray, -1, kernel)
-    thresh = cv2.adaptiveThreshold(sharpened, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+    sharpened = cv2.filter2D(denoised, -1, kernel)
+    enhanced = cv2.equalizeHist(sharpened)
+    thresh = cv2.adaptiveThreshold(enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                    cv2.THRESH_BINARY, 11, 2)
     return thresh
 
-def extract_number_plate(image_path: str) -> tuple[str | None, np.ndarray | None]:
+def extract_number_plate(image_path: str, conf_threshold=0.3) -> tuple[str | None, np.ndarray | None]:
     processed = preprocess_image(image_path)
     results = reader.readtext(processed)
     texts = []
-    # Create a copy of the image to draw boxes on
     img_draw = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
+
     for bbox, text, conf in results:
-        if conf > 0.4:
+        if conf > conf_threshold:
             texts.append(text)
-            # Draw bounding boxes
             pts = np.array(bbox).astype(int)
-            cv2.polylines(img_draw, [pts], isClosed=True, color=(0,255,0), thickness=2)
-            # Put text near box
+            cv2.polylines(img_draw, [pts], True, (0,255,0), 2)
             cv2.putText(img_draw, text, tuple(pts[0]), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
-    return (" ".join(texts).strip() if texts else None, img_draw)
+
+    extracted_text = " ".join(texts).strip() if texts else None
+    return extracted_text, img_draw
 
 def analyze_violations(image_path: str) -> list[str]:
     results = model.predict(source=image_path, save=False, conf=0.3, verbose=False)
@@ -83,7 +85,6 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c.setFont("Helvetica-Bold", 24)
     c.drawCentredString(width / 2, height - 50, "Traffic Violation E-Challan")
 
-    # Draw line
     c.line(50, height - 60, width - 50, height - 60)
 
     c.setFont("Helvetica", 12)
@@ -91,28 +92,24 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c.drawString(50, height - 110, f"Vehicle Number: {vehicle_number}")
     c.drawString(50, height - 130, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Draw vehicle image scaled
     if os.path.exists(vehicle_image_path):
         max_width = 200
         max_height = 150
         c.drawString(50, height - 160, "Vehicle Image:")
         c.drawImage(ImageReader(vehicle_image_path), 50, height - 310, width=max_width, height=max_height, preserveAspectRatio=True)
 
-    # Violations section
     c.setFont("Helvetica-Bold", 14)
     c.drawString(300, height - 160, "Violations and Fines:")
     c.setFont("Helvetica", 12)
     y = height - 180
     for v in violations:
-        fine = FINE_AMOUNTS.get(v.lower(), 0)
+        fine = VIOLATION_DETAILS.get(v.lower(), {}).get("fine", 0)
         c.drawString(310, y, f"- {v}: ₹{fine}")
         y -= 20
 
-    # Total fine amount highlighted
     c.setFont("Helvetica-Bold", 16)
     c.drawString(300, y - 10, f"Total Fine Amount: ₹{fine_amount}")
 
-    # QR code with challan ID
     qr_img = generate_qr_code(challan_id)
     qr_buffer = BytesIO()
     qr_img.save(qr_buffer)
@@ -127,14 +124,32 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
 def generate_challan_id(length=8) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-FINE_AMOUNTS = {
-    "without helmet": 500,
-    "no seatbelt": 300,
-    "triple riding": 700,
-    "number plate": 0,
+VIOLATION_DETAILS = {
+    "without helmet": {
+        "fine": 500,
+        "icon": "🪖",
+        "severity": "serious",
+        "desc": "Riding without a helmet puts your safety at risk and is punishable by fine."
+    },
+    "no seatbelt": {
+        "fine": 300,
+        "icon": "🔒",
+        "severity": "warning",
+        "desc": "Seatbelt ensures safety in accidents; non-usage attracts fines."
+    },
+    "triple riding": {
+        "fine": 700,
+        "icon": "👥",
+        "severity": "serious",
+        "desc": "Carrying more than two passengers is illegal and dangerous."
+    },
+    "number plate": {
+        "fine": 0,
+        "icon": "🔢",
+        "severity": "info",
+        "desc": "Number plate detection only."
+    }
 }
-
-from pathlib import Path
 
 def main():
     st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
@@ -152,7 +167,6 @@ def main():
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Layout: two columns for image and OCR preview
         col1, col2 = st.columns(2)
 
         with col1:
@@ -160,7 +174,7 @@ def main():
 
         with col2:
             with st.spinner("Extracting number plate and OCR bounding boxes..."):
-                plate, ocr_img = extract_number_plate(temp_path)
+                plate, ocr_img = extract_number_plate(temp_path, conf_threshold=0.3)
             if ocr_img is not None:
                 st.image(ocr_img, caption="OCR Bounding Boxes on Preprocessed Image", use_column_width=True)
             st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
@@ -171,11 +185,22 @@ def main():
         if violations:
             st.markdown("**Detected Violations:**")
             for v in violations:
-                st.success(f"- {v}")
+                details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "icon":"❓", "severity":"info", "desc":""})
+                badge_class = details["severity"]
+                icon = details["icon"]
+                desc = details["desc"]
+                fine = details["fine"]
+
+                st.markdown(
+                    f"""
+                    <div class="violation-badge {badge_class}" title="{desc}">
+                        <span class="violation-icon">{icon}</span> {v} - ₹{fine}
+                    </div>
+                    """, unsafe_allow_html=True)
         else:
             st.info("No violations detected.")
 
-        total_fine = sum(FINE_AMOUNTS.get(v.lower(), 0) for v in violations)
+        total_fine = sum(VIOLATION_DETAILS.get(v.lower(), {}).get("fine", 0) for v in violations)
         st.markdown(f"### Total Fine Amount: ₹{total_fine}")
 
         if violations:
