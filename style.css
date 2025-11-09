@@ -1,69 +1,50 @@
 body {
-    background-color: #f0f2f6;
+    background-color: #f8f9fa;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #2c3e50; /* Dark text for contrast */
-    margin: 0;
-    padding: 0;
 }
 
-h1, h2, h3, h4 {
+h1 {
     color: #2c3e50;
-    margin-bottom: 0.5em;
+    text-align: center;
+    margin-bottom: 1rem;
 }
 
-.stButton>button {
-    background-color: #27ae60;
+[data-testid="stFileUploader"] {
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.stDownloadButton > button {
+    background-color: #2980b9;
     color: white;
+    font-weight: bold;
     border-radius: 8px;
     padding: 10px 20px;
-    font-weight: bold;
-    border: none;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 6px rgba(39, 174, 96, 0.4);
+    transition: background-color 0.3s ease;
+}
+.stDownloadButton > button:hover {
+    background-color: #3498db;
 }
 
-.stButton>button:hover {
-    background-color: #219150;
-    cursor: pointer;
-    box-shadow: 0 6px 10px rgba(33, 145, 80, 0.6);
+.violation-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: 4px 6px 4px 0;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    cursor: default;
+    user-select: none;
+    transition: background-color 0.3s ease;
 }
-
-.stFileUploader {
-    border: 2px dashed #27ae60;
-    border-radius: 10px;
-    padding: 25px;
-    background-color: #ffffff;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    color: #2c3e50; /* Dark text */
-}
-
-.stFileUploader:hover {
-    border-color: #219150;
-    box-shadow: 0 6px 10px rgba(33, 145, 80, 0.3);
-}
-
-.stImage > img {
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    max-width: 100%;
-}
-
-.stMarkdown {
-    color: #2c3e50;
-}
-
-.stTextInput>div>input, .stTextArea>div>textarea {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #2c3e50;
-    transition: border-color 0.3s ease;
-}
-
-.stTextInput>div>input:focus, .stTextArea>div>textarea:focus {
-    border-color: #27ae60;
-    outline: none;
-    box-shadow: 0 0 5px #27ae60;
+.violation-badge.serious { background-color: #e74c3c; }
+.violation-badge.warning { background-color: #f39c12; }
+.violation-badge.info { background-color: #3498db; }
+.violation-icon {
+    margin-right: 8px;
+    font-size: 18px;
 }
