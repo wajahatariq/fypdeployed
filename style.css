@@ -1,75 +1,75 @@
 /* Sidebar styling */
 [data-testid="stSidebar"] {
-    background-color: #0B3D91; /* Deep Blue */
-    color: white;
+    background-color: #2C3E50; /* Dark slate blue-gray */
+    color: #ECF0F1; /* Light gray */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-[data-testid="stSidebar"] .css-1d391kg {
-    padding: 1rem 1rem 1rem 1rem;
-}
-
 [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-    color: #F24C00; /* Orange highlights */
+    color: #1ABC9C; /* Teal */
     margin-bottom: 0.5rem;
 }
 
 /* Sidebar slider style */
 .css-1offfwp {
-    color: white !important;
+    color: #ECF0F1 !important;
 }
 
 .css-1offfwp .css-1q1n0ol {
-    background-color: #F24C00 !important;
+    background-color: #1ABC9C !important;
 }
 
 /* Violation badges */
 .violation-badge {
     border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 8px;
-    color: white;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    color: #fff;
     font-weight: 600;
     font-size: 16px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 /* Severity colors */
 .violation-badge.serious {
-    background-color: #e63946; /* red */
+    background-color: #E74C3C; /* Soft red */
 }
 
 .violation-badge.warning {
-    background-color: #f4a261; /* orange */
-    color: #000;
+    background-color: #F39C12; /* Warm amber */
+    color: #222;
 }
 
 .violation-badge.info {
-    background-color: #2a9d8f; /* teal */
+    background-color: #3498DB; /* Clean blue */
 }
 
 /* Main title style */
 h1, h2, h3 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #34495E; /* Dark slate */
 }
 
 /* Download button styling */
 .css-1r6slb0.edgvbvh3 {
-    background-color: #0B3D91;
+    background-color: #1ABC9C;
     color: white;
-    border-radius: 8px;
-    font-weight: bold;
-    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: 700;
+    padding: 0.6rem 1.2rem;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 5px rgba(26,188,156,0.4);
 }
 
 .css-1r6slb0.edgvbvh3:hover {
-    background-color: #F24C00;
+    background-color: #16A085;
     color: #fff;
 }
 
 /* File uploader label */
 .css-1wy0on6 {
-    color: #000 !important; /* Make uploader label black */
-    font-weight: 600;
+    color: #2C3E50 !important; /* Dark slate */
+    font-weight: 700;
     font-size: 18px;
 }
