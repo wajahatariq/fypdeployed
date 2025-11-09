@@ -95,15 +95,21 @@ FINE_AMOUNTS = {
     # add more if needed
 }
 
+from pathlib import Path
+
 def main():
     st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
 
-    # Load your custom CSS from style.css in root
-    if os.path.exists("style.css"):
-        with open("style.css") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    # Load your custom CSS from style.css using pathlib
+    css_path = Path(__file__).parent / "style.css"
+    if css_path.exists():
+        css_content = css_path.read_text()
+        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
     st.title("Traffic Violation Detection & E-Challan Generator")
+
+    # ... rest of your code unchanged ...
+
 
     uploaded_file = st.file_uploader("Upload Vehicle Image", type=["jpg", "jpeg", "png"])
     if uploaded_file:
