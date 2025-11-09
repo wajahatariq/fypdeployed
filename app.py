@@ -6,8 +6,6 @@ import easyocr
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from datetime import datetime
 import random
@@ -72,7 +70,7 @@ def analyze_violations(image_path: str) -> list[str]:
     return detected_classes
 
 def generate_qr_code(data: str) -> Image.Image:
-    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr = qrcode.QRCode(version=1, box_size=10, border=2)
     qr.add_data(data)
     qr.make(fit=True)
     img = qr.make_image(fill='black', back_color='white')
@@ -83,100 +81,40 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Define colors
-    primary_color = colors.HexColor("#004085")   # Navy Blue
-    secondary_color = colors.HexColor("#d6e0f0") # Light Blue Background
-    alert_color = colors.HexColor("#dc3545")     # Red for important
-    text_color = colors.black
+    # Header
+    c.setFont("Helvetica-Bold", 24)
+    c.drawCentredString(width / 2, height - 50, "Traffic Violation E-Challan")
 
-    margin = 40
-    y = height - margin
+    c.line(50, height - 60, width - 50, height - 60)
 
-    # Background block header
-    c.setFillColor(secondary_color)
-    c.rect(0, y - 80, width, 80, fill=True, stroke=False)
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 90, f"Challan ID: {challan_id}")
+    c.drawString(50, height - 110, f"Vehicle Number: {vehicle_number}")
+    c.drawString(50, height - 130, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Header Title
-    c.setFillColor(primary_color)
-    c.setFont("Helvetica-Bold", 28)
-    c.drawCentredString(width / 2, y - 50, "Traffic Violation E-Challan")
-
-    y -= 110
-
-    # Info box background
-    c.setFillColor(secondary_color)
-    c.roundRect(margin, y - 110, width - 2 * margin, 110, 10, fill=True, stroke=False)
-
-    # Info Text
-    c.setFillColor(primary_color)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(margin + 10, y - 40, f"Challan ID: ")
-    c.setFont("Helvetica", 14)
-    c.drawString(margin + 110, y - 40, challan_id)
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(margin + 10, y - 65, "Vehicle Number: ")
-    c.setFont("Helvetica", 14)
-    c.drawString(margin + 140, y - 65, vehicle_number)
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(margin + 10, y - 90, "Date: ")
-    c.setFont("Helvetica", 14)
-    c.drawString(margin + 60, y - 90, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-    y -= 150
-
-    # Vehicle Image
     if os.path.exists(vehicle_image_path):
-        max_width = 220
-        max_height = 160
-        c.setFillColor(text_color)
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(margin, y + 20, "Vehicle Image:")
-        c.drawImage(ImageReader(vehicle_image_path), margin, y - max_height + 10, width=max_width, height=max_height, preserveAspectRatio=True)
+        max_width = 200
+        max_height = 150
+        c.drawString(50, height - 160, "Vehicle Image:")
+        c.drawImage(ImageReader(vehicle_image_path), 50, height - 310, width=max_width, height=max_height, preserveAspectRatio=True)
 
-    # Violations box background
-    viol_x = margin + 250
-    viol_y = y + 120
-    viol_w = width - viol_x - margin
-    viol_h = max_height + 20
-
-    c.setFillColor(secondary_color)
-    c.roundRect(viol_x, y - 10, viol_w, viol_h, 10, fill=True, stroke=False)
-
-    # Violations Title
-    c.setFillColor(primary_color)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(viol_x + 10, viol_y, "Violations and Fines:")
-
-    c.setFont("Helvetica", 14)
-    line_y = viol_y - 30
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(300, height - 160, "Violations and Fines:")
+    c.setFont("Helvetica", 12)
+    y = height - 180
     for v in violations:
         fine = VIOLATION_DETAILS.get(v.lower(), {}).get("fine", 0)
-        icon = VIOLATION_DETAILS.get(v.lower(), {}).get("icon", "")
-        # Red color for serious violations
-        c.setFillColor(alert_color if VIOLATION_DETAILS.get(v.lower(), {}).get("severity") == "serious" else text_color)
-        c.drawString(viol_x + 20, line_y, f"{icon} {v}: ₹{fine}")
-        line_y -= 25
+        c.drawString(310, y, f"- {v}: ₹{fine}")
+        y -= 20
 
-    # Total fine
-    c.setFillColor(primary_color)
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(viol_x + 20, line_y - 10, f"Total Fine Amount: ₹{fine_amount}")
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(300, y - 10, f"Total Fine Amount: ₹{fine_amount}")
 
-    # QR Code bottom right
     qr_img = generate_qr_code(challan_id)
     qr_buffer = BytesIO()
     qr_img.save(qr_buffer)
     qr_buffer.seek(0)
-
-    qr_size = 100
-    c.drawImage(ImageReader(qr_buffer), width - margin - qr_size, margin, width=qr_size, height=qr_size)
-
-    # Footer Text
-    c.setFillColor(colors.grey)
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawCentredString(width / 2, margin / 2, "Generated by Traffic Violation System")
+    c.drawImage(ImageReader(qr_buffer), width - 150, height - 250, width=100, height=100)
 
     c.showPage()
     c.save()
@@ -229,7 +167,7 @@ def main():
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        col1, col2 = st.columns([1, 1])
+        col1, col2 = st.columns(2)
 
         with col1:
             st.image(temp_path, caption="Uploaded Vehicle Image", use_column_width=True)
