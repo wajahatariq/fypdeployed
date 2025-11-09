@@ -72,15 +72,7 @@ h1, h2, h3, h4, h5, h6 {
     gap: 20px;
 }
 
-[data-testid="file-uploader"] > div {
+[data-testid="file-uploader"] label {
+    color: black !important;
     background-color: transparent !important;
-    border: 2px dashed #0B3D91 !important; /* Your brand color */
-    border-radius: 10px;
-    padding: 18px 20px;
-}
-
-/* Optional: input hover effect */
-[data-testid="file-uploader"] > div:hover {
-    border-color: #F24C00 !important; /* Highlight on hover */
-    background-color: rgba(242, 76, 0, 0.1) !important; /* subtle highlight */
 }
