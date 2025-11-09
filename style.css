@@ -1,56 +1,73 @@
 body {
-    background-color: #f4f7fa;
+    background-color: #f0f2f6;
+    color: #222222;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-h1 {
-    color: #2c3e50;
-    text-align: center;
-    margin-bottom: 1rem;
+h1, h2, h3, h4, h5, h6 {
+    color: #0B3D91;
     font-weight: 700;
-}
-
-[data-testid="stFileUploader"] {
-    background-color: #ffffffcc;
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 6px rgb(50 50 93 / 0.11), 0 1px 3px rgb(0 0 0 / 0.08);
-}
-
-.stDownloadButton > button {
-    background-color: #004085;
-    color: white;
-    font-weight: 600;
-    border-radius: 12px;
-    padding: 12px 25px;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,64,133,0.4);
-}
-.stDownloadButton > button:hover {
-    background-color: #0056b3;
-    box-shadow: 0 7px 21px rgba(0,86,179,0.6);
 }
 
 .violation-badge {
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
     display: inline-flex;
     align-items: center;
-    padding: 8px 16px;
-    margin: 6px 8px 6px 0;
-    border-radius: 30px;
-    font-weight: 700;
-    font-size: 15px;
-    color: white;
+    gap: 8px;
     cursor: default;
-    user-select: none;
-    box-shadow: 0 3px 7px rgba(0,0,0,0.15);
     transition: background-color 0.3s ease;
 }
-.violation-badge.serious { background-color: #dc3545; }
-.violation-badge.warning { background-color: #fd7e14; }
-.violation-badge.info { background-color: #0d6efd; }
+
 .violation-icon {
-    margin-right: 12px;
     font-size: 20px;
+}
+
+.violation-badge.serious {
+    background-color: #F24C00; /* Red/orange */
+}
+
+.violation-badge.warning {
+    background-color: #FF9F1C; /* Yellow/orange */
+    color: #222222;
+}
+
+.violation-badge.info {
+    background-color: #0B3D91; /* Deep blue */
+}
+
+.violation-badge:hover {
+    opacity: 0.85;
+}
+
+/* Streamlit button styling */
+.stDownloadButton > button {
+    background-color: #0B3D91 !important;
+    color: white !important;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 8px 24px;
+    transition: background-color 0.3s ease;
+}
+
+.stDownloadButton > button:hover {
+    background-color: #F24C00 !important;
+    color: white !important;
+}
+
+/* File uploader container */
+[data-testid="file-uploader"] {
+    border-radius: 10px;
+    border: 2px dashed #0B3D91;
+    padding: 20px;
+    background-color: white;
+}
+
+/* Columns spacing */
+.css-1y4p8pa {
+    gap: 20px;
 }
