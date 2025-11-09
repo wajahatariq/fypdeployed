@@ -1,78 +1,75 @@
-body {
-    background-color: #f0f2f6;
-    color: #222222;
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: #0B3D91; /* Deep Blue */
+    color: white;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: #0B3D91;
-    font-weight: 700;
+[data-testid="stSidebar"] .css-1d391kg {
+    padding: 1rem 1rem 1rem 1rem;
 }
 
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+    color: #F24C00; /* Orange highlights */
+    margin-bottom: 0.5rem;
+}
+
+/* Sidebar slider style */
+.css-1offfwp {
+    color: white !important;
+}
+
+.css-1offfwp .css-1q1n0ol {
+    background-color: #F24C00 !important;
+}
+
+/* Violation badges */
 .violation-badge {
-    padding: 10px 15px;
-    margin-bottom: 12px;
     border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
+    padding: 10px;
+    margin-bottom: 8px;
     color: white;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: default;
-    transition: background-color 0.3s ease;
+    font-weight: 600;
+    font-size: 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.violation-icon {
-    font-size: 20px;
-}
-
+/* Severity colors */
 .violation-badge.serious {
-    background-color: #F24C00; /* Red/orange */
+    background-color: #e63946; /* red */
 }
 
 .violation-badge.warning {
-    background-color: #FF9F1C; /* Yellow/orange */
-    color: #222222;
+    background-color: #f4a261; /* orange */
+    color: #000;
 }
 
 .violation-badge.info {
-    background-color: #0B3D91; /* Deep blue */
+    background-color: #2a9d8f; /* teal */
 }
 
-.violation-badge:hover {
-    opacity: 0.85;
+/* Main title style */
+h1, h2, h3 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Streamlit button styling */
-.stDownloadButton > button {
-    background-color: #0B3D91 !important;
-    color: white !important;
-    font-weight: 700;
+/* Download button styling */
+.css-1r6slb0.edgvbvh3 {
+    background-color: #0B3D91;
+    color: white;
     border-radius: 8px;
-    padding: 8px 24px;
-    transition: background-color 0.3s ease;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
 }
 
-.stDownloadButton > button:hover {
-    background-color: #F24C00 !important;
-    color: white !important;
+.css-1r6slb0.edgvbvh3:hover {
+    background-color: #F24C00;
+    color: #fff;
 }
 
-/* File uploader container */
-[data-testid="file-uploader"] {
-    border-radius: 10px;
-    border: 2px dashed #0B3D91;
-    padding: 20px;
-    background-color: white;
-}
-
-/* Columns spacing */
-.css-1y4p8pa {
-    gap: 20px;
-}
-
-[data-testid="file-uploader"] label {
-    color: black !important;
-    background-color: transparent !important;
+/* File uploader label */
+.css-1wy0on6 {
+    color: #000 !important; /* Make uploader label black */
+    font-weight: 600;
+    font-size: 18px;
 }
