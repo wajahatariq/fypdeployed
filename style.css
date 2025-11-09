@@ -1,0 +1,40 @@
+body {
+    background-color: #f0f2f6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h1, h2, h3, h4 {
+    color: #2c3e50;
+}
+
+.stButton>button {
+    background-color: #27ae60;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: bold;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.stButton>button:hover {
+    background-color: #219150;
+    cursor: pointer;
+}
+
+.stFileUploader {
+    border: 2px dashed #27ae60;
+    border-radius: 10px;
+    padding: 25px;
+    background-color: white;
+    transition: border-color 0.3s ease;
+}
+
+.stFileUploader:hover {
+    border-color: #219150;
+}
+
+.stImage > img {
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
