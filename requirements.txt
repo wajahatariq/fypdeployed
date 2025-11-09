@@ -1,8 +1,8 @@
-streamlit
-opencv-python-headless
+streamlit==1.22.0
 numpy
 easyocr
 ultralytics
-reportlab
-qrcode[pil]
 Pillow
+qrcode
+reportlab
+opencv-python-headless==4.7.0.72
