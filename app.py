@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer, Image as RLImage
+from reportlab.platypus import Paragraph, Table, TableStyle
 from reportlab.lib.enums import TA_CENTER
 from datetime import datetime
 import random
@@ -85,15 +85,13 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Colors and styles
     primary_color = colors.HexColor("#0B3D91")  # Deep Blue
-    secondary_color = colors.HexColor("#F24C00")  # Orange/red for highlights
+    secondary_color = colors.HexColor("#F24C00")  # Orange/red
     styles = getSampleStyleSheet()
     styleN = styles["Normal"]
     styleB = styles["Heading2"]
     styleB.alignment = TA_CENTER
 
-    # Header
     c.setFillColor(primary_color)
     c.setFont("Helvetica-Bold", 28)
     c.drawCentredString(width / 2, height - 60, "Traffic Violation E-Challan")
@@ -108,19 +106,16 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c.drawString(50, height - 120, f"Vehicle Number: {vehicle_number}")
     c.drawString(50, height - 140, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Vehicle image
     if os.path.exists(vehicle_image_path):
         max_width = 240
         max_height = 180
         c.drawString(50, height - 170, "Vehicle Image:")
         c.drawImage(ImageReader(vehicle_image_path), 50, height - 350, width=max_width, height=max_height, preserveAspectRatio=True)
 
-    # Violations Table
     c.setFillColor(primary_color)
     c.setFont("Helvetica-Bold", 16)
     c.drawString(320, height - 170, "Violations and Fines")
 
-    # Prepare table data
     table_data = [["Violation", "Description", "Fine (₹)"]]
     for v in violations:
         details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "desc":"", "icon":"❓"})
@@ -142,12 +137,10 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     table.wrapOn(c, width, height)
     table.drawOn(c, 310, height - 330 - 20 * len(violations))
 
-    # Total fine
     c.setFont("Helvetica-Bold", 18)
     c.setFillColor(secondary_color)
     c.drawString(320, height - 360 - 20 * len(violations), f"Total Fine Amount: ₹{fine_amount}")
 
-    # QR Code
     qr_img = generate_qr_code(challan_id)
     qr_buffer = BytesIO()
     qr_img.save(qr_buffer)
@@ -186,28 +179,32 @@ VIOLATION_DETAILS = {
         "icon": "🔢",
         "severity": "info",
         "desc": "Number plate detection only."
+    },
+    "helmet": {
+        "fine": 0,
+        "icon": "✅",
+        "severity": "info",
+        "desc": "Helmet worn - no violation."
+    },
+    "rider": {
+        "fine": 0,
+        "icon": "👤",
+        "severity": "info",
+        "desc": "Rider detected."
     }
 }
 
 def main():
-    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
+    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="wide")
 
-    css_path = Path(__file__).parent / "style.css"
-    if css_path.exists():
-        css_content = css_path.read_text()
-        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
+    # Sidebar
+    st.sidebar.title("Settings")
+    conf_threshold = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.3, 0.05)
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### About")
+    st.sidebar.info("Traffic Violation Detection app with YOLO model and OCR for number plate extraction.\n\nBuilt by Wajahat.")
 
     st.title("Traffic Violation Detection & E-Challan Generator")
-
-    # Add slider in sidebar for OCR confidence threshold
-    conf_threshold = st.sidebar.slider(
-        "OCR Confidence Threshold",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.3,
-        step=0.05,
-        help="Adjust confidence level for OCR text detection"
-    )
 
     uploaded_file = st.file_uploader("Upload Vehicle Image (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
     if uploaded_file:
@@ -215,7 +212,7 @@ def main():
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([2, 3])
 
         with col1:
             st.image(temp_path, caption="Uploaded Vehicle Image", use_column_width=True)
@@ -228,7 +225,17 @@ def main():
             st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
 
         with st.spinner("Analyzing for violations..."):
-            violations = analyze_violations(temp_path)
+            violations_raw = analyze_violations(temp_path)
+
+        # Remove duplicates, keep order
+        seen = set()
+        violations_filtered = []
+        for v in violations_raw:
+            if v not in seen:
+                seen.add(v)
+                violations_filtered.append(v)
+
+        violations = violations_filtered
 
         if violations:
             st.markdown("**Detected Violations:**")
