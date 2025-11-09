@@ -22,38 +22,34 @@ from pathlib import Path
 
 
 def main():
-    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="wide")
+    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
 
-    # Load CSS (your existing css loading logic)
+    # Load and apply CSS if exists
     css_path = Path(__file__).parent / "style.css"
     if css_path.exists():
         css_content = css_path.read_text()
         st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
-    # Sidebar Section for Upload and Settings
-    st.sidebar.title("Traffic Violation App")
-    st.sidebar.markdown("Upload vehicle images and generate e-challans.")
-    uploaded_file = st.sidebar.file_uploader("Upload Vehicle Image", type=["jpg", "jpeg", "png"])
+    st.title("Traffic Violation Detection & E-Challan Generator")
 
-    # Optional toggles or settings on sidebar
-    conf_threshold = st.sidebar.slider("OCR Confidence Threshold", 0.1, 1.0, 0.3)
-    violation_confidence = st.sidebar.slider("Violation Detection Confidence", 0.1, 1.0, 0.3)
-    
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("© 2025 Traffic Authority")
+    # Add slider in sidebar for OCR confidence threshold
+    conf_threshold = st.sidebar.slider(
+        "OCR Confidence Threshold",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.3,
+        step=0.05,
+        help="Adjust confidence level for OCR text detection"
+    )
 
-    # Main page content
-    st.title("🚦 Traffic Violation Detection & E-Challan Generator")
-
+    uploaded_file = st.file_uploader("Upload Vehicle Image (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
     if uploaded_file:
-        temp_path = os.path.join("temp", uploaded_file.name)
+        temp_path = os.path.join(TEMP_DIR, uploaded_file.name)
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Section: Image Display & OCR Results
-        st.header("Uploaded Vehicle Image & Number Plate Extraction")
-
         col1, col2 = st.columns(2)
+
         with col1:
             st.image(temp_path, caption="Uploaded Vehicle Image", use_column_width=True)
 
@@ -61,7 +57,7 @@ def main():
             with st.spinner("Extracting number plate and OCR bounding boxes..."):
                 plate, ocr_img = extract_number_plate(temp_path, conf_threshold=conf_threshold)
             if ocr_img is not None:
-                st.image(ocr_img, caption="OCR Bounding Boxes", use_column_width=True)
+                st.image(ocr_img, caption="OCR Bounding Boxes on Preprocessed Image", use_column_width=True)
             st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
 
         # Section: Violation Detection
