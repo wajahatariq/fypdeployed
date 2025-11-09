@@ -1,0 +1,119 @@
+import streamlit as st
+import os
+import cv2
+import numpy as np
+import easyocr
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from datetime import datetime
+import random
+import string
+
+# Initialize OCR reader once
+reader = easyocr.Reader(['en'], gpu=False)
+
+OUTPUT_DIR = "output"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def preprocess_image(image_path: str) -> np.ndarray:
+    image = cv2.imread(image_path)
+    if image is None:
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    filtered = cv2.bilateralFilter(gray, 11, 17, 17)
+    thresh = cv2.adaptiveThreshold(filtered, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY, 11, 2)
+    return thresh
+
+def extract_number_plate(image_path: str) -> str | None:
+    processed = preprocess_image(image_path)
+    results = reader.readtext(processed)
+    texts = [text for _, text, conf in results if conf > 0.4]
+    return " ".join(texts).strip() if texts else None
+
+def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount: int) -> BytesIO:
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Header
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(50, height - 50, "Traffic Violation E-Challan")
+
+    # Details
+    c.setFont("Helvetica", 14)
+    c.drawString(50, height - 100, f"Challan ID: {generate_challan_id()}")
+    c.drawString(50, height - 130, f"Vehicle Number: {vehicle_number}")
+    c.drawString(50, height - 160, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # Violations
+    c.drawString(50, height - 200, "Violations:")
+    y = height - 230
+    for v in violations:
+        c.drawString(70, y, f"- {v}")
+        y -= 20
+
+    # Fine amount
+    c.drawString(50, y - 20, f"Total Fine Amount: ₹{fine_amount}")
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+def generate_challan_id(length=8) -> str:
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+def main():
+    st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
+    st.title("Traffic Violation Detection & E-Challan Generator")
+
+    uploaded_file = st.file_uploader("Upload Vehicle Image", type=["jpg", "jpeg", "png"])
+    if uploaded_file:
+        temp_path = os.path.join("temp", uploaded_file.name)
+        os.makedirs("temp", exist_ok=True)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        st.image(temp_path, caption="Uploaded Image", use_column_width=True)
+
+        with st.spinner("Extracting number plate..."):
+            plate = extract_number_plate(temp_path)
+        st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
+
+        # Mock violation detection logic - replace with your own analysis
+        MOCK_VIOLATIONS = ["No Helmet", "No Seatbelt", "Triple Riding"]
+        detected_violations = []
+        if plate:
+            # Randomly select violations for demo
+            detected_violations = random.sample(MOCK_VIOLATIONS, random.randint(0, len(MOCK_VIOLATIONS)))
+        else:
+            st.warning("Number plate not detected, skipping violation detection.")
+
+        st.markdown("**Detected Violations:**")
+        if detected_violations:
+            for v in detected_violations:
+                st.write(f"- {v}")
+        else:
+            st.write("None")
+
+        FINE_AMOUNTS = {
+            "No Helmet": 500,
+            "No Seatbelt": 300,
+            "Triple Riding": 700,
+        }
+        total_fine = sum(FINE_AMOUNTS.get(v, 0) for v in detected_violations)
+        st.markdown(f"**Total Fine Amount:** ₹{total_fine}")
+
+        if detected_violations:
+            pdf_buffer = generate_challan_pdf(plate or "UNKNOWN", detected_violations, total_fine)
+            st.download_button(
+                label="Download Challan PDF",
+                data=pdf_buffer,
+                file_name=f"challan_{generate_challan_id()}.pdf",
+                mime="application/pdf"
+            )
+
+if __name__ == "__main__":
+    main()
