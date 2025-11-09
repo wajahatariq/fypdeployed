@@ -118,7 +118,7 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
 
     table_data = [["Violation", "Description", "Fine (₹)"]]
     for v in violations:
-        details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "desc":"", "icon":"❓"})
+        details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "desc":"", "icon":""})
         table_data.append([v, details["desc"], f"₹{details['fine']}"])
 
     table = Table(table_data, colWidths=[100, 230, 80])
@@ -158,55 +158,63 @@ def generate_challan_id(length=8) -> str:
 VIOLATION_DETAILS = {
     "without helmet": {
         "fine": 500,
-        "icon": "🪖",
         "severity": "serious",
         "desc": "Riding without a helmet puts your safety at risk and is punishable by fine."
     },
     "no seatbelt": {
         "fine": 300,
-        "icon": "🔒",
         "severity": "warning",
         "desc": "Seatbelt ensures safety in accidents; non-usage attracts fines."
     },
     "triple riding": {
         "fine": 700,
-        "icon": "👥",
         "severity": "serious",
         "desc": "Carrying more than two passengers is illegal and dangerous."
     },
     "number plate": {
         "fine": 0,
-        "icon": "🔢",
         "severity": "info",
         "desc": "Number plate detection only."
     },
     "helmet": {
         "fine": 0,
-        "icon": "✅",
         "severity": "info",
         "desc": "Helmet worn - no violation."
-    },
-    "rider": {
-        "fine": 0,
-        "icon": "👤",
-        "severity": "info",
-        "desc": "Rider detected."
     }
 }
+
+css_path = Path(__file__).parent / "style.css"
+if css_path.exists():
+    css_content = css_path.read_text()
+    st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
 def main():
     st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="wide")
 
-    # Sidebar
-    st.sidebar.title("Settings")
-    conf_threshold = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.3, 0.05)
+    # Sidebar with sections
+    st.sidebar.markdown("## Settings")
+    with st.sidebar.expander("Confidence Threshold", expanded=True):
+        conf_threshold = st.slider("Adjust Confidence Threshold", 0.0, 1.0, 0.3, 0.05)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### About")
-    st.sidebar.info("Traffic Violation Detection app with YOLO model and OCR for number plate extraction.\n\nBuilt by Wajahat.")
+
+    with st.sidebar.expander("About the App", expanded=False):
+        st.markdown(
+            """
+            <p style="font-size:14px;">
+            This app uses a YOLO model for detecting traffic violations and EasyOCR for number plate extraction.<br>
+            Developed by Wajahat.
+            </p>
+            """, unsafe_allow_html=True)
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Contact")
+    st.sidebar.info("Reach out via email or social media for feedback and support.")
 
     st.title("Traffic Violation Detection & E-Challan Generator")
+    st.markdown("---")
 
     uploaded_file = st.file_uploader("Upload Vehicle Image (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
+
     if uploaded_file:
         temp_path = os.path.join(TEMP_DIR, uploaded_file.name)
         with open(temp_path, "wb") as f:
@@ -222,36 +230,41 @@ def main():
                 plate, ocr_img = extract_number_plate(temp_path, conf_threshold=conf_threshold)
             if ocr_img is not None:
                 st.image(ocr_img, caption="OCR Bounding Boxes on Preprocessed Image", use_column_width=True)
-            st.markdown(f"**Extracted Number Plate:** {plate or 'Not detected'}")
+            st.markdown(f"**Extracted Number Plate:** `{plate or 'Not detected'}`")
 
         with st.spinner("Analyzing for violations..."):
             violations_raw = analyze_violations(temp_path)
 
-        # Remove duplicates, keep order
+        # Remove duplicates and exclude 'rider'
         seen = set()
         violations_filtered = []
         for v in violations_raw:
+            if v.lower() == "rider":
+                continue
             if v not in seen:
                 seen.add(v)
                 violations_filtered.append(v)
-
         violations = violations_filtered
 
         if violations:
-            st.markdown("**Detected Violations:**")
+            st.markdown("### Detected Violations")
+            color_map = {
+                "serious": "#e63946",
+                "warning": "#f4a261",
+                "info": "#2a9d8f"
+            }
             for v in violations:
-                details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "icon":"❓", "severity":"info", "desc":""})
-                badge_class = details["severity"]
-                icon = details["icon"]
-                desc = details["desc"]
+                details = VIOLATION_DETAILS.get(v.lower(), {"fine":0, "severity":"info", "desc":""})
+                color = color_map.get(details["severity"], "#666666")
                 fine = details["fine"]
-
+                desc = details["desc"]
                 st.markdown(
                     f"""
-                    <div class="violation-badge {badge_class}" title="{desc}">
-                        <span class="violation-icon">{icon}</span> {v} - ₹{fine}
+                    <div style="background-color:{color};padding:10px;border-radius:8px;color:#fff;margin-bottom:8px;" title="{desc}">
+                        <strong>{v.title()}</strong> — Fine: ₹{fine}
                     </div>
-                    """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True
+                )
         else:
             st.info("No violations detected.")
 
