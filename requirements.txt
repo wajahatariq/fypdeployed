@@ -6,3 +6,4 @@ pillow
 reportlab
 ultralytics
 torch
+cv2
