@@ -103,7 +103,7 @@ def main():
         with open("style.css") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    st.title("🚦 Traffic Violation Detection & E-Challan Generator")
+    st.title("Traffic Violation Detection & E-Challan Generator")
 
     uploaded_file = st.file_uploader("Upload Vehicle Image", type=["jpg", "jpeg", "png"])
     if uploaded_file:
