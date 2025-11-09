@@ -14,7 +14,7 @@ from ultralytics import YOLO
 # Config and paths
 OUTPUT_DIR = "output"
 TEMP_DIR = "temp"
-MODEL_PATH = "weights/best.pt"  # Your YOLO weights here
+MODEL_PATH = "best.pt"  # Assuming best.pt is in the root of your repo
 
 # Ensure folders exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -23,7 +23,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 # Load EasyOCR reader once (English)
 reader = easyocr.Reader(['en'], gpu=False)
 
-# Load YOLO model once
+# Load YOLO model once, cached for performance
 @st.cache_resource(ttl=3600)
 def load_yolo_model():
     model = YOLO(MODEL_PATH)
@@ -53,7 +53,6 @@ def analyze_violations(image_path: str) -> list[str]:
     if results and len(results) > 0:
         for r in results:
             for cls in r.boxes.cls.cpu().numpy():
-                # Convert class index to label name
                 class_name = model.names[int(cls)]
                 detected_classes.append(class_name)
     return detected_classes
@@ -63,24 +62,20 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Header
     c.setFont("Helvetica-Bold", 20)
     c.drawString(50, height - 50, "Traffic Violation E-Challan")
 
-    # Details
     c.setFont("Helvetica", 14)
     c.drawString(50, height - 100, f"Challan ID: {challan_id}")
     c.drawString(50, height - 130, f"Vehicle Number: {vehicle_number}")
     c.drawString(50, height - 160, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Violations
     c.drawString(50, height - 200, "Violations:")
     y = height - 230
     for v in violations:
         c.drawString(70, y, f"- {v}")
         y -= 20
 
-    # Fine amount
     c.drawString(50, y - 20, f"Total Fine Amount: ₹{fine_amount}")
 
     c.showPage()
@@ -91,20 +86,22 @@ def generate_challan_pdf(vehicle_number: str, violations: list[str], fine_amount
 def generate_challan_id(length=8) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-# Define fine amounts for your violation classes
+# Adjust this dictionary to your exact class names from the model
 FINE_AMOUNTS = {
-    "no_helmet": 500,
-    "no_seatbelt": 300,
-    "triple_riding": 700,
-    # add more based on your classes
+    "without helmet": 500,
+    "no seatbelt": 300,
+    "triple riding": 700,
+    "number plate": 0,  # usually no fine for number plate detection itself
+    # add more if needed
 }
 
 def main():
     st.set_page_config(page_title="Traffic Violation Detection & E-Challan", layout="centered")
 
-    # Add custom CSS for styling
-    with open("style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    # Load your custom CSS from style.css in root
+    if os.path.exists("style.css"):
+        with open("style.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.title("🚦 Traffic Violation Detection & E-Challan Generator")
 
@@ -130,7 +127,7 @@ def main():
         else:
             st.info("No violations detected.")
 
-        total_fine = sum(FINE_AMOUNTS.get(v, 0) for v in violations)
+        total_fine = sum(FINE_AMOUNTS.get(v.lower(), 0) for v in violations)
         st.markdown(f"**Total Fine Amount:** ₹{total_fine}")
 
         if violations:
