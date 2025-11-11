@@ -1,8 +1,11 @@
 streamlit
-numpy
-easyocr
-ultralytics
-Pillow
-qrcode
-reportlab
 opencv-python-headless
+numpy
+pillow
+torch
+ultralytics
+easyocr
+reportlab
+protobuf
+pathlib
+
